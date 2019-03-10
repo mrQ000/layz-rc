@@ -1,0 +1,604 @@
+// rapidM2M APP-MODEL created by rapidM2M.studio
+//---META---
+// #define APM_ID          seq34y
+// #define APM_VERSION     1
+// #define APM_OWNER       dev1@rapidm2m.studio
+// #define APM_NAME        LayZ-RC
+// #define APM_AUTHOR      dev1@rapidm2m.studio
+// #define APM_REQUIRED_APP 
+// #define APM_REQUIRED_FW 
+// #define APM_REQUIRED_HW m3iotbox
+// #define APM_HWID_m3iotbox 1
+// #define APM_HWID_M3IOTBOX 1
+// #define APM_REQUIRED_BE 
+// #define APM_CREATE_STAMP 2018-11-28 15:55:57
+// #define APM_CREATE_MS   1543420557974
+// #define APM_BUILD_STAMP 2018-12-03 14:18:10
+// #define APM_BUILD_MS    0
+//---/META---
+
+//---SOURCE---
+// #define APM_ID      "seq34y"
+// #define APM_VERSION "1"
+// #define APM_OWNER   "dev1@rapidm2m.studio"
+// #define APM_NAME    "LayZ-RC"
+// #define APM_AUTHOR  "dev1@rapidm2m.studio"
+// #define APM_REQUIRED_APP ""
+// #define APM_REQUIRED_FW  ""
+// #define APM_REQUIRED_HW  "m3iotbox"
+// #define APM_HWID_m3iotbox 1
+// #define APM_HWID_M3IOTBOX 1
+// #define APM_REQUIRED_BE  ""
+// #define APM_CREATE_STAMP "2018-11-28 15:55:57"
+// #define APM_CREATE_MS    1543420557974
+// #define APM_BUILD_STAMP  "2018-12-03 14:18:10"
+// #define APM_BUILD_MS     0
+// // ---------------------------------------------------------------------------------------
+// // LayZ remote control
+// // ---------------------------------------------------------------------------------------
+// // local ctrl
+// //  - air on/off
+// //  - silent/auto
+// 
+// // ---
+// // STATUS
+// // - recording upon any changes of underlying values
+// // - some values are filtered to reduce update frequency
+// // ---
+// #config0 status up
+// 	// current operation states
+//     blower_on   u8				
+//     heater_on   u8
+//     pump_on     u8
+//     Exx         u8				// current error pending /w autoclear
+//     t_air       s8  units="°C"  // current air temperature
+//     t_water     s8  units="°C"  // current water temperature
+//     t_target    s8  units="°C"  // planned water temperature  
+// 	prognum		s8				// program currently running (-1=fallback)
+//     load        u16 units="W"   // active electrical load
+//     silent_mode  u8  editmask="0=unknown,1=auto/local,2=auto/remote,3=silent/local,4=silent/remote"
+//     blower_mode u8  editmask="0=unknown,1=off/local,2=off/remote,3=on/local,4=on/remote"        
+//     // resetable stats
+//     stats_Exx   u8                  // highest err seen since last stats reset
+//     stats_reset     stamp32         // to calc stats time for estimation of monthly numbers
+//     stats_energy    u16 units="kWh" // abs/estimated per month
+//     stats_blower    u16 units="hrs" // operating hours of air blower - abs/duty cycle
+//     stats_heater    u16 units="hrs" // operating hours of heater     - abs/duty cycle
+//     stats_pump      u16 units="hrs" // operating hours of water pump - abs/duty cycle
+// 	stats_t_watermin s8 units="°C"	// lowest water temperature over stats period
+// 	stats_t_watermax s8 units="°C"	// lowest water temperature over stats period
+//     // feedback values -> cmds
+//     blower_trg		u8  
+//     silent_trg		u8  
+//     resetstats_trg	u8  
+//     live_trg		u8  
+// 
+// // ---
+// // SERIES
+// // - recording every 15 minutes
+// // ---
+// #histdata0 trend up
+//     total_tm	s32 units="sec" // total runtime since power on
+//     period_sec  u16 units="sec"  // total length of period 
+//     Exx         u8               // highest error number seen in this period
+//     t_air       s8 units="°C"    // avg air temperature during period
+//     t_water     s8 units="°C"    // avg water temperature during period
+//     energy      u32 units="Ws"   // accumulated consumption over period
+//     blower_sec  u16 units="sec"  // accumulated operating time during period
+//     heater_sec  u16 units="sec" 
+//     pump_sec    u16 units="sec" 
+// 
+// // ---
+// // EVENTS
+// // - recording upon event occurance
+// // events:
+// //      boot    
+// //      change of
+// //          blower_on, heater_on, waterpump_on
+// //          Exx
+// //          t_target
+// //          blower_mode, water_mode
+// //      re-set of
+// //          stats reset
+// //          schedule
+// //          led???
+// // ---
+// #histdata1 events up
+//     code        astr 12
+//     params      astr 50
+// 
+// // ---
+// // CMDS - for remote control
+// // - no recording, but feedback in STATUS upon change
+// // ---
+// #config5 cmds down
+//     blower_trg		u8  // bit 0..7 = trigger
+//     silent_trg		u8  // bit 0..7 = trigger
+//     resetstats_trg	u8  // bit 0..7 = trigger
+//     live_trg		u8  // each change prolongs live mode for 15s
+// 
+// // ---
+// // SETUP - frequently changed user settings
+// // - no recording
+// // ---
+// #config6 setup down     
+//     light   		s32	units="0xRRGGBB" editmask=%HEXH% default="0x80ffff"
+// 	// program schedule
+//     prog_start[10]  stamp32             // 0=since the beginning of the universe;)
+//     prog_end[10]    stamp32             // 
+//     prog_target[10] s8      units="°C"  // <0=prog# not used, 0=pump only, >0=temperature
+// 
+// // ---
+// // PROFILE - rarely changed basic settings
+// // - no recording
+// // ---
+// #config8 profile down
+//     price_per_kwh   f32 .2			default=0.2
+//     blower_load     u16 units="W"	default=30
+//     heater_load     u16 units="W"	default=1000
+//     pump_load       u16 units="W"	default=50
+// 
+//---/SOURCE---
+
+// ---------------------------------------------------------------------------------------
+// LayZ remote control
+// ---------------------------------------------------------------------------------------
+// local ctrl
+// - air on/off
+// - silent/auto
+// ---
+// STATUS
+// - recording upon any changes of underlying values
+// - some values are filtered to reduce update frequency
+// ---
+<table>
+    name    =config0
+    alias   =status
+    title   =status
+    edit    =99
+    // current operation states
+    <field>
+        type    =u8
+        decpl   =0
+        alias   =blower_on
+        title   =blower_on
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =heater_on
+        alias   =heater_on
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =pump_on
+        alias   =pump_on
+    </field>
+    // current error pending /w autoclear
+    <field>
+        type    =u8
+        decpl   =0
+        alias   =Exx
+        title   =Exx
+    </field>
+    // current air temperature
+    <field>
+        type    =s8
+        decpl   =0
+        units   =°C
+        title   =t_air
+        alias   =t_air
+    </field>
+    // current water temperature
+    <field>
+        type    =s8
+        decpl   =0
+        units   =°C
+        title   =tw
+        alias   =tw
+    </field>
+    // planned water temperature
+    <field>
+        type    =s8
+        decpl   =0
+        units   =°C
+        title   =target
+        alias   =target
+    </field>
+    // program currently running (-1=fallback)
+    <field>
+        type    =s8
+        decpl   =0
+        alias   =prognum
+        title   =prognum
+    </field>
+    // active electrical load
+    <field>
+        type    =u16
+        decpl   =0
+        units   =W
+        alias   =load
+        title   =load
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =silent_mode
+        alias   =silent_mode
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =blower_mode
+        alias   =blower_mode
+    </field>
+    // resetable stats
+    // highest err seen since last stats reset
+    <field>
+        type    =u8
+        decpl   =0
+        title   =stats_Exx
+        alias   =stats_Exx
+    </field>
+    // to calc stats time for estimation of monthly numbers
+    <field>
+        type    =stamp4
+        decpl   =-1
+        param0  =local
+        units   =UTC
+        title   =stats_reset
+        alias   =stats_reset
+    </field>
+    // abs/estimated per month
+    <field>
+        type    =u16
+        decpl   =0
+        units   =kWh
+        title   =stats_energy
+        alias   =stats_energy
+    </field>
+    // operating hours of air blower - abs/duty cycle
+    <field>
+        type    =u16
+        decpl   =0
+        units   =hrs
+        title   =stats_blower
+        alias   =stats_blower
+    </field>
+    // operating hours of heater     - abs/duty cycle
+    <field>
+        type    =u16
+        decpl   =0
+        units   =hrs
+        title   =stats_heater
+        alias   =stats_heater
+    </field>
+    // operating hours of water pump - abs/duty cycle
+    <field>
+        type    =u16
+        decpl   =0
+        units   =hrs
+        title   =stats_pump
+        alias   =stats_pump
+    </field>
+    // lowest water temperature over stats period
+    <field>
+        type    =s8
+        decpl   =0
+        units   =°C
+        title   =stats_twmin
+        alias   =stats_twmin
+    </field>
+    // lowest water temperature over stats period
+    <field>
+        type    =s8
+        decpl   =0
+        units   =°C
+        title   =stats_twmax
+        alias   =stats_twmax
+    </field>
+    // feedback values -> cmds
+    <field>
+        type    =u8
+        decpl   =0
+        title   =blower_trg
+        alias   =blower_trg
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =silent_trg
+        alias   =silent_trg
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =resetstats_trg
+        alias   =resetstats_trg
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =live_trg
+        alias   =live_trg
+    </field>
+    // ---
+    // SERIES
+    // - recording every 15 minutes
+    // ---
+</table>
+// 31 bytes total size
+<split>
+    source =rm2mraw
+    target =histdata0
+    key    =00
+</split>
+<table>
+    name    =histdata0
+    title   =trend
+    alias   =trend
+    edit    =99
+    // total runtime since power on
+    <field>
+        type    =s32
+        decpl   =0
+        units   =sec
+        title   =total_tm
+        alias   =total_tm
+    </field>
+    // total length of period
+    <field>
+        type    =u16
+        decpl   =0
+        units   =sec
+        alias   =period_sec
+        title   =period_sec
+    </field>
+    // highest error number seen in this period
+    <field>
+        type    =u8
+        decpl   =0
+        title   =Exx
+        alias   =Exx
+    </field>
+    // avg air temperature during period
+    <field>
+        type    =s8
+        decpl   =0
+        units   =°C
+        alias   =t_air
+        title   =t_air
+    </field>
+    // avg water temperature during period
+    <field>
+        type    =s8
+        decpl   =0
+        units   =°C
+        alias   =tw
+        title   =tw
+    </field>
+    // accumulated consumption over period
+    <field>
+        type    =u32
+        decpl   =0
+        units   =Ws
+        title   =energy
+        alias   =energy
+    </field>
+    // accumulated operating time during period
+    <field>
+        type    =u16
+        decpl   =0
+        units   =sec
+        title   =blower_sec
+        alias   =blower_sec
+    </field>
+    <field>
+        type    =u16
+        decpl   =0
+        units   =sec
+        title   =heater_sec
+        alias   =heater_sec
+    </field>
+    <field>
+        type    =u16
+        decpl   =0
+        units   =sec
+        title   =pump_sec
+        alias   =pump_sec
+    </field>
+    // ---
+    // EVENTS
+    // - recording upon event occurance
+    // events:
+    // boot
+    // change of
+    // blower_on, heater_on, waterpump_on
+    // Exx
+    // t_target
+    // blower_mode, water_mode
+    // re-set of
+    // stats reset
+    // schedule
+    // led???
+    // ---
+</table>
+// 20 bytes total size
+<split>
+    source =rm2mraw
+    target =histdata1
+    key    =01
+</split>
+<table>
+    name    =histdata1
+    title   =events
+    alias   =events
+    edit    =99
+    <field>
+        type    =string
+        max     =12
+        param1  =nocodepage
+        alias   =code
+    </field>
+    <field>
+        type    =string
+        max     =50
+        param1  =nocodepage
+        alias   =params
+    </field>
+    // ---
+    // CMDS - for remote control
+    // - no recording, but feedback in STATUS upon change
+    // ---
+</table>
+// 63 bytes total size
+<table>
+    name    =config5
+    title   =cmds
+    alias   =cmds
+    // bit 0..7 = trigger
+    <field>
+        type    =u8
+        decpl   =0
+        title   =blower_trg
+        alias   =blower_trg
+    </field>
+    // bit 0..7 = trigger
+    <field>
+        type    =u8
+        decpl   =0
+        title   =silent_trg
+        alias   =silent_trg
+    </field>
+    // bit 0..7 = trigger
+    <field>
+        type    =u8
+        decpl   =0
+        title   =resetstats_trg
+        alias   =resetstats_trg
+    </field>
+    // each change prolongs live mode for 15s
+    <field>
+        type    =u8
+        decpl   =0
+        title   =live_trg
+        alias   =live_trg
+    </field>
+    // ---
+    // SETUP - frequently changed user settings
+    // - no recording
+    // ---
+</table>
+// 4 bytes total size
+<table>
+    name    =config6
+    title   =setup
+    alias   =setup
+    <field>
+        type    =u8
+        decpl   =0
+        title   =res
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =RR
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =GG
+    </field>
+    <field>
+        type    =u8
+        decpl   =0
+        title   =BB
+    </field>
+
+    <field>
+        edit    =99
+        byteofs = 0
+        type    =s32
+        decpl   =0
+        units   =0xRRGGBB
+        editmask=%HEX%
+        default =0x80ffff
+        alias   =light
+        title   =light
+    </field>
+    // program schedule
+    // 0=since the beginning of the universe;)
+    <array size=10 idxa=0 idxainc=1>
+        <field>
+            type    =stamp4
+            decpl   =-1
+            param0  =local
+            units   =UTC
+            title   =prog_start_§idxa1§
+            alias   =prog_start_§idxa1§
+        </field>
+    </array>
+    <array size=10 idxa=0 idxainc=1>
+        <field>
+            type    =stamp4
+            decpl   =-1
+            param0  =local
+            units   =UTC
+            title   =prog_end_§idxa1§
+            alias   =prog_end_§idxa1§
+        </field>
+    </array>
+    // <0=prog# not used, 0=pump only, >0=temperature
+    <array size=10 idxa=0 idxainc=1>
+        <field>
+            type    =s8
+            decpl   =0
+            units   =°C
+            title   =prog_target_§idxa1§
+            alias   =prog_target_§idxa1§
+        </field>
+    </array>
+    // ---
+    // PROFILE - rarely changed basic settings
+    // - no recording
+    // ---
+</table>
+// 94 bytes total size
+<table>
+    name    =config8
+    alias   =profile
+    title   =profile
+    <field>
+        type    =f32
+        decpl   =2
+        default =0.2
+        title   =price_per_kwh
+        alias   =price_per_kwh
+    </field>
+    <field>
+        type    =u16
+        decpl   =0
+        units   =W
+        default =30
+        title   =blower_load
+        alias   =blower_load
+    </field>
+    <field>
+        type    =u16
+        decpl   =0
+        units   =W
+        default =1000
+        title   =heater_load
+        alias   =heater_load
+    </field>
+    <field>
+        type    =u16
+        decpl   =0
+        units   =W
+        default =50
+        title   =pump_load
+        alias   =pump_load
+    </field>
+</table>
+// 10 bytes total size
