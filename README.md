@@ -1,5 +1,5 @@
 # REMOTE CONTROL for LAY-Z SPA 
-using cellular network
+using cellular network, based on rapidM2M 
 
 * Remote control of
   * Heater schedule (start/end, temperature)
