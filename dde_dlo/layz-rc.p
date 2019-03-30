@@ -13,7 +13,8 @@
 #define BLOWER_TIMEOUT_S (  15*60)
 #define SILENT_TIMEOUT_S (3*60*60)
 
-#define LIVE_HOLD_S         90    // seconds to hold live mode after receiving a live trigger
+#define UPLINK_NOK_AUTORETRY_S  (60*60) // seconds to wait until uplink forces recovery upon on-going error/disc status
+#define LIVE_HOLD_S         90          // seconds to hold live mode after receiving a live trigger
 #define TREND_INTERVAL_S  (5*60)
 #define HEALTH_INTERVAL_S (3*60*60)    // [s] !!! recording is skipped if no faults counted !!!
 
@@ -433,23 +434,45 @@ public onUplinkWaiting(){
   opmode_=1;
 }
 
+/*
+  monitor uplink connection and force recovery if it hangs for too long time in
+  error or disconnected state during ONLINE mode
+  (which is active during boot and optionally during regular operation)
+*/
+forward uplink_task_1s();
+public uplink_task_1s(){
+
+  static tnok_= 0;    // number of seconds in not-ok (error,disc) status
+
+  // ONLINE mode NOT active -> done!
+  if (UPLINK_ONLINE != uplinkMode()) {
+    tnok_= 0;
+    return;
+  }
+
+  // uplink is OK -> done!
+  new upl= rM2M_TxGetStatus();
+  new nok= (upl & RM2M_TX_FAILED) || !(upl & RM2M_TX_ACTIVE);
+  if (!nok) {
+    tnok_= 0;
+    return;
+  }
+
+  // uplink not timedout yet -> done (and accumulate time) !
+  tnok_++;
+  if (tnok_ < UPLINK_NOK_AUTORETRY_S) {
+    return;
+  }
+
+  // uplink timed out -> try to recover!
+  dde_event( "upl","recover");
+  flushUplink();
+  tnok_= 0;
+}
+
+
 static consolebuffer{4096};
 
-/* todo rem
-// todo rem - playing a bit with RGB
-
-new COLORS[]= [
-  0x0000ff,0x0000bf, 0x00007f, 0x00003f,
-  0x00ff00,0x00bf00, 0x007f00, 0x003f00,
-  0xff0000,0xbf0000, 0x7f0000, 0x3f0000, 0x000000,
-  0x3f3f3f,0x7f7f7f, 0xbfbfbf, 0xffffff
-];
-  static co_ = 0;
-  setSysLed( COLORS[ co_]);
-// todo rem? _setLight( COLORS[ co_]);
-  if (++co_ >= sizeof COLORS) co_=0;
-
-*/
 main(){
   opmode_= 0;
   tboot_= now();
@@ -471,6 +494,7 @@ main(){
   // connect uplink and wait until DN containers available
   // proceeds with onUplinkReady (and eventually an intermediate onUplinkWaiting)
   initUplink();
+  setInterval( "uplink_task_1s", 1000);
 
   dde_event( "boot","initializing");
 }
