@@ -29,3 +29,4 @@ using cellular network, based on rapidM2M
 * [User Interface / Web App](https://codepen.io/mrQ_/pen/GwWqER)
 * [Project presentation slides](https://docs.google.com/presentation/d/e/2PACX-1vTHQPsuV6sXKc5gxL9crg099udq97GZqN0jf2Jnf2mCJcU21wUM8zd_1vZSeGWA5wYvWniveEIPkd5f/pub?start=false&loop=false&delayms=3000)
 * [SIM footprint of c-control module](https://docs.google.com/spreadsheets/d/e/2PACX-1vTfcBwLl-dlUmNGdUZ4OGKGqfEK_TyoakFluHA-3XZ5E4M1TL8lP74kzyA7YoTpal0Uj6KsiEy4zcJc/pub?gid=462723643&single=true&output=pdf)
+* [Sand filter upgrade for Lay-Z Spa](https://docs.google.com/presentation/d/e/2PACX-1vRNNm6SVw44lRd3Mk-nNHrK4yoe4eD5Smn0RoVWUi7Es4sDYnkPH_I32p5zPAlMZ8BSEEI8n39qPQWO/pub?start=false&loop=false&delayms=3000)
